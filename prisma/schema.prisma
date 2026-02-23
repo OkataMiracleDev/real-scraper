@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  phone         String?
+  whatsapp      String?
+  email         String?
+  location      String?
+  propertyTypes String[]
+  profileUrl    String?
+  website       String?
+  isLead        Boolean  @default(false)
+  source        String
+  scrapedAt     DateTime @default(now())
+  
+  properties    Property[]
+  
+  @@index([location])
+  @@index([isLead])
+  @@index([source])
+}
+
+model Property {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  price       String?
+  location    String
+  type        String
+  bedrooms    Int?
+  bathrooms   Int?
+  url         String
+  imageUrl    String?
+  agentId     String   @db.ObjectId
+  scrapedAt   DateTime @default(now())
+  
+  agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  @@index([location])
+  @@index([type])
+  @@index([agentId])
+}
+
+model ScrapeJob {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  status      String   @default("pending")
+  source      String
+  progress    Int      @default(0)
+  total       Int      @default(0)
+  leadsFound  Int      @default(0)
+  error       String?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  @@index([status])
+}
