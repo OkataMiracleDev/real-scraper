@@ -53,11 +53,7 @@ npx prisma db push
 npm run dev
 ```
 
-6. Set up Inngest (for background jobs):
-- Sign up at https://www.inngest.com
-- Get your event key and signing key
-- Add them to `.env`
-- Run Inngest dev server: `npx inngest-cli dev`
+Note: For production, you'll want to set up Inngest for background jobs. For development, you can test the scraper directly or deploy to a platform with longer timeouts.
 
 ## Usage
 

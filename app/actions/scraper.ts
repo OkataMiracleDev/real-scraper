@@ -1,29 +1,16 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { inngest } from '@/lib/inngest/client';
 
 export async function startScrapeJob(location: string = 'lagos', maxPages: number = 5) {
-  const job = await prisma.scrapeJob.create({
-    data: {
-      status: 'pending',
-      source: 'Nigeria Property Centre',
-      progress: 0,
-      total: maxPages * 20,
-      leadsFound: 0,
-    },
+  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/scrape`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ location, maxPages }),
   });
 
-  await inngest.send({
-    name: 'scrape/start',
-    data: {
-      jobId: job.id,
-      location,
-      maxPages,
-    },
-  });
-
-  return { jobId: job.id };
+  const data = await response.json();
+  return data;
 }
 
 export async function getScrapeJobStatus(jobId: string) {
