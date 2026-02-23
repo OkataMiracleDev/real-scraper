@@ -1,8 +1,5 @@
-import { chromium } from 'playwright-extra';
-import stealth from 'puppeteer-extra-plugin-stealth';
+import { chromium } from 'playwright';
 import { prisma } from '@/lib/db';
-
-chromium.use(stealth());
 
 interface AgentData {
   name: string;
@@ -47,12 +44,19 @@ export async function scrapeNigeriaPropertyCentre(
 ) {
   const browser = await chromium.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-blink-features=AutomationControlled',
+    ],
   });
 
   const context = await browser.newContext({
     userAgent: getRandomUserAgent(),
     viewport: { width: 1920, height: 1080 },
+    extraHTTPHeaders: {
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
   });
 
   const page = await context.newPage();

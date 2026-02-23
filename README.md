@@ -16,9 +16,8 @@ A Next.js 15 application for scraping and analyzing real estate agents from Nige
 ## Tech Stack
 
 - Next.js 15 (App Router)
-- Playwright with stealth plugin
+- Playwright for web scraping
 - Prisma ORM + MongoDB
-- Inngest for background jobs
 - TanStack Table
 - Recharts for visualizations
 - Tailwind CSS + Shadcn/UI
@@ -68,7 +67,7 @@ Note: For production, you'll want to set up Inngest for background jobs. For dev
 
 - Random User-Agent rotation
 - Human-like delays (2-5 seconds)
-- Stealth plugin to bypass bot detection
+- Stealth browser flags to avoid detection
 - Residential proxy support (configure in scraper)
 
 ## Deployment
