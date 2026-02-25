@@ -26,6 +26,10 @@ export function ScrapeControl() {
         if (job.status === 'completed' || job.status === 'failed') {
           setIsLoading(false);
           clearInterval(interval);
+          
+          if (job.status === 'failed' && job.error) {
+            alert(`Scraping failed: ${job.error}`);
+          }
         }
       }
     }, 2000);
@@ -51,6 +55,12 @@ export function ScrapeControl() {
         <CardTitle>Scrape Control</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {process.env.NEXT_PUBLIC_VERCEL_ENV && (
+          <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800 border border-yellow-200">
+            ⚠️ Scraping doesn't work on Vercel. See PRODUCTION-SCRAPING.md for solutions.
+          </div>
+        )}
+        
         <Button
           onClick={handleStartScrape}
           disabled={isLoading}
