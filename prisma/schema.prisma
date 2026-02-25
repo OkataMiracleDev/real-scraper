@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// If using Railway's MongoDB plugin, it provides MONGO_URL instead
+// In that case, change the line above to:
+// url      = env("MONGO_URL")
+
 model Agent {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   name          String
