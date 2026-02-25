@@ -1,16 +1,62 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 export async function startScrapeJob(location: string = 'lagos', maxPages: number = 5) {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/scrape`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ location, maxPages }),
-  });
+  try {
+    const job = await prisma.scrapeJob.create({
+      data: {
+        status: 'pending',
+        source: 'Nigeria Property Centre',
+        progress: 0,
+        total: maxPages * 20,
+        leadsFound: 0,
+      },
+    });
 
-  const data = await response.json();
-  return data;
+    // Start scraping in background (non-blocking)
+    startBackgroundScrape(job.id, location, maxPages).catch(async (error) => {
+      console.error('Failed to start scrape:', error);
+      await prisma.scrapeJob.update({
+        where: { id: job.id },
+        data: {
+          status: 'failed',
+          error: error.message || 'Failed to start scraper',
+          completedAt: new Date(),
+        },
+      });
+    });
+
+    return { jobId: job.id };
+  } catch (error) {
+    console.error('Error creating scrape job:', error);
+    throw new Error('Failed to create scrape job');
+  }
+}
+
+async function startBackgroundScrape(jobId: string, location: string, maxPages: number) {
+  try {
+    // Check if we're in a serverless environment
+    if (process.env.VERCEL || process.env.RAILWAY_ENVIRONMENT) {
+      throw new Error('Playwright cannot run on serverless/Railway. Please run locally or use a scraping API service.');
+    }
+
+    // Import dynamically to avoid blocking
+    const { scrapeNigeriaPropertyCentre } = await import('@/lib/scraper/nigeria-property-centre');
+    await scrapeNigeriaPropertyCentre(jobId, location, maxPages);
+  } catch (error) {
+    console.error('Background scrape error:', error);
+    await prisma.scrapeJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown scraping error',
+        completedAt: new Date(),
+      },
+    });
+    throw error;
+  }
 }
 
 export async function getScrapeJobStatus(jobId: string) {

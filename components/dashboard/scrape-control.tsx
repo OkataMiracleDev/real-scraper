@@ -55,9 +55,10 @@ export function ScrapeControl() {
         <CardTitle>Scrape Control</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {process.env.NEXT_PUBLIC_VERCEL_ENV && (
+        {(process.env.NEXT_PUBLIC_VERCEL_ENV || typeof window !== 'undefined') && (
           <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800 border border-yellow-200">
-            ⚠️ Scraping doesn't work on Vercel. See PRODUCTION-SCRAPING.md for solutions.
+            ⚠️ Scraping requires Playwright which doesn't work on serverless platforms. 
+            <br />Run locally with <code className="bg-yellow-100 px-1 rounded">npm run dev</code> or see PRODUCTION-SCRAPING.md
           </div>
         )}
         
