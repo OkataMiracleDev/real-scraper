@@ -87,21 +87,34 @@ export async function scrapeNigeriaPropertyCentre(
           if (agentData && propertyData) {
             const isLead = !!agentData.phone && (!agentData.website || agentData.website.includes('nigeriapropertycentre.com'));
 
-            const agent = await prisma.agent.upsert({
-              where: { id: agentData.profileUrl || `temp-${Date.now()}` },
-              update: {},
-              create: {
-                name: agentData.name,
-                phone: agentData.phone,
-                email: agentData.email,
-                location: agentData.location,
-                propertyTypes: agentData.propertyTypes,
-                profileUrl: agentData.profileUrl,
-                website: agentData.website,
-                isLead,
-                source: 'Nigeria Property Centre',
-              },
+            // Create or find agent - use phone/email as unique identifier
+            const uniqueKey = agentData.phone || agentData.email || agentData.name;
+            
+            let agent = await prisma.agent.findFirst({
+              where: {
+                OR: [
+                  { phone: agentData.phone },
+                  { email: agentData.email },
+                  { name: agentData.name }
+                ]
+              }
             });
+
+            if (!agent) {
+              agent = await prisma.agent.create({
+                data: {
+                  name: agentData.name,
+                  phone: agentData.phone,
+                  email: agentData.email,
+                  location: agentData.location,
+                  propertyTypes: agentData.propertyTypes,
+                  profileUrl: agentData.profileUrl,
+                  website: agentData.website,
+                  isLead,
+                  source: 'Nigeria Property Centre',
+                },
+              });
+            }
 
             await prisma.property.create({
               data: {

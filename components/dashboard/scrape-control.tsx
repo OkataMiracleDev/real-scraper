@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { startScrapeJob, getScrapeJobStatus } from '@/app/actions/scraper';
-import { Loader2, Play } from 'lucide-react';
+import { Loader2, Play, AlertTriangle } from 'lucide-react';
 
 export function ScrapeControl() {
   const [isLoading, setIsLoading] = useState(false);
@@ -12,6 +12,11 @@ export function ScrapeControl() {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<string>('');
   const [leadsFound, setLeadsFound] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!jobId) return;
@@ -55,10 +60,12 @@ export function ScrapeControl() {
         <CardTitle>Scrape Control</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {(process.env.NEXT_PUBLIC_VERCEL_ENV || typeof window !== 'undefined') && (
-          <div className="rounded-md bg-yellow-50 p-3 text-sm text-yellow-800 border border-yellow-200">
-            ⚠️ Scraping requires Playwright which doesn't work on serverless platforms. 
-            <br />Run locally with <code className="bg-yellow-100 px-1 rounded">npm run dev</code> or see PRODUCTION-SCRAPING.md
+        {mounted && (
+          <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800 border border-blue-200 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <div>
+              Scraping works locally. For production, see PRODUCTION-SCRAPING.md
+            </div>
           </div>
         )}
         
