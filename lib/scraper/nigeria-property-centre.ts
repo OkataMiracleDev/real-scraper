@@ -61,9 +61,17 @@ export async function scrapeNigeriaPropertyCentre(
 
   const page = await context.newPage();
   let totalLeads = 0;
+  let itemsProcessed = 0;
 
   try {
     for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+      // Check if job was cancelled
+      const jobBeforePage = await prisma.scrapeJob.findUnique({ where: { id: jobId } });
+      if (jobBeforePage?.cancelled) {
+        console.log('Scrape job cancelled by user');
+        break;
+      }
+
       const url = `https://nigeriapropertycentre.com/for-sale/properties/${location}?page=${pageNum}`;
       
       await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
@@ -75,8 +83,16 @@ export async function scrapeNigeriaPropertyCentre(
       );
 
       const uniqueLinks = [...new Set(propertyLinks)].slice(0, 20);
+      const totalItems = maxPages * 20;
 
       for (let i = 0; i < uniqueLinks.length; i++) {
+        // Check if job was cancelled
+        const jobBeforeProperty = await prisma.scrapeJob.findUnique({ where: { id: jobId } });
+        if (jobBeforeProperty?.cancelled) {
+          console.log('Scrape job cancelled by user');
+          break;
+        }
+
         try {
           await page.goto(uniqueLinks[i], { waitUntil: 'domcontentloaded', timeout: 30000 });
           await randomDelay(2000, 4000);
@@ -126,15 +142,17 @@ export async function scrapeNigeriaPropertyCentre(
             if (isLead) totalLeads++;
           }
 
+          itemsProcessed++;
+
           if (onProgress) {
-            onProgress(pageNum * uniqueLinks.length + i, maxPages * 20, totalLeads);
+            onProgress(itemsProcessed, totalItems, totalLeads);
           }
 
           await prisma.scrapeJob.update({
             where: { id: jobId },
             data: {
-              progress: pageNum * uniqueLinks.length + i,
-              total: maxPages * 20,
+              progress: itemsProcessed,
+              total: totalItems,
               leadsFound: totalLeads,
             },
           });
@@ -143,15 +161,25 @@ export async function scrapeNigeriaPropertyCentre(
           console.error(`Error scraping property ${uniqueLinks[i]}:`, error);
         }
       }
+      
+      // Check if cancelled after processing page
+      const jobAfterPage = await prisma.scrapeJob.findUnique({ where: { id: jobId } });
+      if (jobAfterPage?.cancelled) {
+        break;
+      }
     }
 
-    await prisma.scrapeJob.update({
-      where: { id: jobId },
-      data: {
-        status: 'completed',
-        completedAt: new Date(),
-      },
-    });
+    // Update final status
+    const finalJob = await prisma.scrapeJob.findUnique({ where: { id: jobId } });
+    if (!finalJob?.cancelled) {
+      await prisma.scrapeJob.update({
+        where: { id: jobId },
+        data: {
+          status: 'completed',
+          completedAt: new Date(),
+        },
+      });
+    }
 
   } catch (error) {
     console.error('Scraping error:', error);

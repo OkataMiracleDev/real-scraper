@@ -7,7 +7,7 @@ export async function startScrapeJob(location: string = 'lagos', maxPages: numbe
   try {
     const job = await prisma.scrapeJob.create({
       data: {
-        status: 'pending',
+        status: 'running',
         source: 'Nigeria Property Centre',
         progress: 0,
         total: maxPages * 20,
@@ -32,6 +32,24 @@ export async function startScrapeJob(location: string = 'lagos', maxPages: numbe
   } catch (error) {
     console.error('Error creating scrape job:', error);
     throw new Error('Failed to create scrape job');
+  }
+}
+
+export async function stopScrapeJob(jobId: string) {
+  try {
+    const job = await prisma.scrapeJob.update({
+      where: { id: jobId },
+      data: {
+        cancelled: true,
+        status: 'stopped',
+        completedAt: new Date(),
+      },
+    });
+    
+    return { success: true, job };
+  } catch (error) {
+    console.error('Error stopping scrape job:', error);
+    throw new Error('Failed to stop scrape job');
   }
 }
 

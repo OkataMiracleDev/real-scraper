@@ -60,6 +60,7 @@ model ScrapeJob {
   total       Int      @default(0)
   leadsFound  Int      @default(0)
   error       String?
+  cancelled   Boolean  @default(false)
   startedAt   DateTime @default(now())
   completedAt DateTime?
   

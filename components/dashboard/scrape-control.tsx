@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { startScrapeJob, getScrapeJobStatus } from '@/app/actions/scraper';
-import { Loader2, Play, AlertTriangle } from 'lucide-react';
+import { startScrapeJob, getScrapeJobStatus, stopScrapeJob } from '@/app/actions/scraper';
+import { Loader2, Play, Square, AlertTriangle } from 'lucide-react';
 
 export function ScrapeControl() {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,15 +25,19 @@ export function ScrapeControl() {
       const job = await getScrapeJobStatus(jobId);
       if (job) {
         setStatus(job.status);
-        setProgress(job.total > 0 ? Math.round((job.progress / job.total) * 100) : 0);
+        // Cap progress at 100%
+        const calculatedProgress = job.total > 0 ? Math.round((job.progress / job.total) * 100) : 0;
+        setProgress(Math.min(calculatedProgress, 100));
         setLeadsFound(job.leadsFound);
 
-        if (job.status === 'completed' || job.status === 'failed') {
+        if (job.status === 'completed' || job.status === 'failed' || job.status === 'stopped') {
           setIsLoading(false);
           clearInterval(interval);
           
           if (job.status === 'failed' && job.error) {
             alert(`Scraping failed: ${job.error}`);
+          } else if (job.status === 'stopped') {
+            alert(`Scraping stopped. Saved ${job.leadsFound} leads from ${job.progress} properties.`);
           }
         }
       }
@@ -54,6 +58,17 @@ export function ScrapeControl() {
     }
   };
 
+  const handleStopScrape = async () => {
+    if (!jobId) return;
+    
+    try {
+      await stopScrapeJob(jobId);
+      setStatus('stopping');
+    } catch (error) {
+      console.error('Failed to stop scrape:', error);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -69,23 +84,36 @@ export function ScrapeControl() {
           </div>
         )}
         
-        <Button
-          onClick={handleStartScrape}
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Scraping...
-            </>
-          ) : (
-            <>
-              <Play className="mr-2 h-4 w-4" />
-              Start Scrape
-            </>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleStartScrape}
+            disabled={isLoading}
+            className="flex-1"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scraping...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                Start Scrape
+              </>
+            )}
+          </Button>
+
+          {isLoading && (
+            <Button
+              onClick={handleStopScrape}
+              variant="destructive"
+              disabled={status === 'stopping'}
+            >
+              <Square className="mr-2 h-4 w-4" />
+              Stop
+            </Button>
           )}
-        </Button>
+        </div>
 
         {jobId && (
           <div className="space-y-2">
